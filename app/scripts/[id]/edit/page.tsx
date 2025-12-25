@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Mic, MicOff, Loader2, Trash2 } from 'lucide-react';
@@ -25,6 +25,7 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ title?: string; content?: string }>({});
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   useEffect(() => {
     const found = scripts.find(s => s.id === id);
@@ -85,6 +86,7 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
       const audioChunks: Blob[] = [];
 
       mediaRecorder.ondataavailable = (event) => {
@@ -102,8 +104,6 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
       mediaRecorder.start();
       setIsRecording(true);
       toast.info('Recording started...');
-      
-      (window as unknown as { currentMediaRecorder: MediaRecorder }).currentMediaRecorder = mediaRecorder;
     } catch (error) {
       console.error('Failed to start recording:', error);
       toast.error('Failed to access microphone');
@@ -111,9 +111,8 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
   };
 
   const stopRecording = () => {
-    const mediaRecorder = (window as unknown as { currentMediaRecorder: MediaRecorder }).currentMediaRecorder;
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
   };
@@ -131,18 +130,46 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
       );
 
       const arrayBuffer = await audioBlob.arrayBuffer();
-      const audioContext = new AudioContext({ sampleRate: 16000 });
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      const audioData = audioBuffer.getChannelData(0);
-
-      const result = await transcriber(audioData);
-      const transcribedText = Array.isArray(result) ? result[0]?.text : result.text;
-
-      if (transcribedText) {
-        setContent(prev => prev ? `${prev}\n\n${transcribedText}` : transcribedText);
-        toast.success('Transcription complete');
-      } else {
-        toast.error('No speech detected');
+      let audioBuffer;
+      try {
+        const audioContext = new AudioContext();
+        audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        // Resample if needed
+        let audioData = audioBuffer.getChannelData(0);
+        if (audioBuffer.sampleRate !== 16000) {
+          // Simple resample to 16kHz (linear interpolation)
+          const ratio = 16000 / audioBuffer.sampleRate;
+          const newLength = Math.round(audioData.length * ratio);
+          const resampled = new Float32Array(newLength);
+          for (let i = 0; i < newLength; i++) {
+            const origIdx = i / ratio;
+            const left = Math.floor(origIdx);
+            const right = Math.min(left + 1, audioData.length - 1);
+            const frac = origIdx - left;
+            resampled[i] = audioData[left] * (1 - frac) + audioData[right] * frac;
+          }
+          audioData = resampled;
+        }
+        if (!audioData || audioData.length === 0) {
+          toast.error('No audio data found');
+          setIsTranscribing(false);
+          return;
+        }
+        const result = await transcriber(audioData);
+        const transcribedText = Array.isArray(result) ? result[0]?.text : result.text;
+        if (transcribedText && transcribedText.trim()) {
+          setContent(prev => {
+            if (!prev) return transcribedText;
+            if (/\n\s*$/.test(prev)) return prev + transcribedText;
+            return prev + '\n\n' + transcribedText;
+          });
+          toast.success('Transcription complete');
+        } else {
+          toast.error('No speech detected');
+        }
+      } catch (decodeError) {
+        console.error('Audio decode failed:', decodeError);
+        toast.error('Failed to decode audio');
       }
     } catch (error) {
       console.error('Transcription failed:', error);
