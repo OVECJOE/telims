@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Script } from '@/lib/db';
 import { useStorage } from '@/lib/storage-context';
 import { voiceService, VoiceRecognitionResult } from '@/lib/voice';
+import { cn } from '@/lib/utils';
 
 interface TeleprompterDisplayProps {
   script: Script;
@@ -145,27 +146,28 @@ export function TeleprompterDisplay({ script: initialScript, onClose }: Teleprom
   const mirrorStyle = script.mirrorMode ? { transform: 'scaleX(-1)' } : {};
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    <div className="fixed inset-0 z-50 bg-background">
       {/* Control Bar */}
-      <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent z-10 p-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center md:justify-between gap-4 max-w-7xl mx-auto">
-          <div className="flex items-center gap-2">
+      <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-background/80 to-transparent z-10 p-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center md:justify-between gap-2 max-w-7xl mx-auto">
+          <div className="flex items-center gap-2 justify-between w-full md:w-auto md:justify-start">
             <Button variant="ghost" size="icon" onClick={onClose}>
-              <ArrowLeft className="w-5 h-5 text-white" />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </Button>
-            <h3 className="text-white font-bold font-mono uppercase tracking-wider">{script.title}</h3>
+            <h3 className="text-foreground font-bold font-mono uppercase text-lg truncate md:truncate-none">{script.title}</h3>
           </div>
 
-          <div className="flex items-center gap-2 justify-between">
+          <div className="flex items-center gap-1 justify-between w-full md:w-auto md:justify-end bg-foreground/10 backdrop-blur-md rounded-full px-2 py-1.5">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsPlaying(!isPlaying)}
+              className="rounded-full hover:bg-foreground/20"
             >
               {isPlaying ? (
-                <Pause className="w-5 h-5 text-white" />
+                <Pause className="w-5 h-5 text-foreground" />
               ) : (
-                <Play className="w-5 h-5 text-white" />
+                <Play className="w-5 h-5 text-foreground ml-0.5" />
               )}
             </Button>
 
@@ -173,31 +175,40 @@ export function TeleprompterDisplay({ script: initialScript, onClose }: Teleprom
               variant="ghost"
               size="icon"
               onClick={() => setScrollPosition(0)}
+              className="rounded-full hover:bg-foreground/20"
             >
-              <RotateCcw className="w-5 h-5 text-white" />
+              <RotateCcw className="w-5 h-5 text-foreground" />
             </Button>
 
             <Button
               variant="ghost"
               size="icon"
               onClick={() => updateScriptSetting({ fontSize: Math.max(script.fontSize - 4, 24) })}
+              className="rounded-full hover:bg-foreground/20"
             >
-              <ZoomOut className="w-5 h-5 text-white" />
+              <ZoomOut className="w-5 h-5 text-foreground" />
             </Button>
 
             <Button
               variant="ghost"
               size="icon"
               onClick={() => updateScriptSetting({ fontSize: Math.min(script.fontSize + 4, 120) })}
+              className="rounded-full hover:bg-foreground/20"
             >
-              <ZoomIn className="w-5 h-5 text-white" />
+              <ZoomIn className="w-5 h-5 text-foreground" />
             </Button>
 
             <Button
               variant="ghost"
               size="icon"
               onClick={() => updateScriptSetting({ voiceControlEnabled: !script.voiceControlEnabled })}
-              className={isVoiceActive ? 'bg-white text-black' : 'bg-transparent text-white'}
+              className={cn(
+                "rounded-full",
+                {
+                  "bg-foreground text-background hover:bg-foreground/80": isVoiceActive,
+                  "bg-transparent text-foreground hover:bg-foreground/20": !isVoiceActive,
+                }
+              )}
             >
               {isVoiceActive ? (
                 <Mic className="w-5 h-5" />
@@ -210,15 +221,16 @@ export function TeleprompterDisplay({ script: initialScript, onClose }: Teleprom
               variant="ghost"
               size="icon"
               onClick={() => setIsSettingsOpen(true)}
+              className="rounded-full hover:bg-foreground/20"
             >
-              <Settings className="w-5 h-5 text-white" />
+              <Settings className="w-5 h-5 text-foreground" />
             </Button>
           </div>
         </div>
 
         {voiceStatus && (
           <div className="mt-2 text-center">
-            <span className="text-black text-sm bg-white px-4 py-1 font-mono font-bold">
+            <span className="text-background text-sm bg-foreground px-4 py-1 font-mono font-bold">
               {voiceStatus}
             </span>
           </div>
@@ -303,7 +315,7 @@ export function TeleprompterDisplay({ script: initialScript, onClose }: Teleprom
                 type="color"
                 value={script.backgroundColor}
                 onChange={(e) => updateScriptSetting({ backgroundColor: e.target.value })}
-                className="w-full h-10 cursor-pointer border-2 border-white bg-black"
+                className="w-full h-10 cursor-pointer border-2 border-foreground bg-background"
               />
             </div>
 
@@ -313,7 +325,7 @@ export function TeleprompterDisplay({ script: initialScript, onClose }: Teleprom
                 type="color"
                 value={script.textColor}
                 onChange={(e) => updateScriptSetting({ textColor: e.target.value })}
-                className="w-full h-10 cursor-pointer border-2 border-white bg-black"
+                className="w-full h-10 cursor-pointer border-2 border-foreground bg-background"
               />
             </div>
           </div>

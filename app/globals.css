@@ -25,6 +25,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -63,6 +64,7 @@
   --accent: #1a1a1a;
   --accent-foreground: #ffffff;
   --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
   --border: #ffffff;
   --input: #ffffff;
   --ring: #ffffff;
@@ -97,6 +99,7 @@
   --accent: #1a1a1a;
   --accent-foreground: #ffffff;
   --destructive: #ff0000;
+  --destructive-foreground: #ffffff;
   --border: #ffffff;
   --input: #ffffff;
   --ring: #ffffff;
@@ -140,4 +143,103 @@
 
 .teleprompter-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+/* Rich Text Editor Styles */
+.tiptap {
+  outline: none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-top: 0.83em;
+  margin-bottom: 0.42em;
+}
+
+.tiptap h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin-top: 0.67em;
+  margin-bottom: 0.33em;
+}
+
+.tiptap p {
+  margin-bottom: 0.5em;
+}
+
+.tiptap ul,
+.tiptap ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap ul {
+  list-style-type: disc;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+}
+
+.tiptap li {
+  margin-bottom: 0.25em;
+}
+
+.tiptap blockquote {
+  border-left: 3px solid var(--foreground);
+  padding-left: 1em;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+  color: var(--muted-foreground);
+}
+
+.tiptap pre {
+  background: var(--muted);
+  padding: 0.75em 1em;
+  font-family: monospace;
+  overflow-x: auto;
+}
+
+.tiptap code {
+  background: var(--muted);
+  padding: 0.15em 0.3em;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.tiptap hr {
+  border: none;
+  border-top: 1px solid var(--foreground);
+  margin: 1em 0;
+}
+
+.tiptap mark {
+  background-color: #fef08a;
+  color: #000;
+  padding: 0.1em 0.2em;
+}
+
+.tiptap s {
+  text-decoration: line-through;
+}
+
+.tiptap u {
+  text-decoration: underline;
 }

@@ -31,12 +31,12 @@ function TeleprompterContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
-      <nav className="bg-black border-b-2 border-white">
+    <div className="min-h-screen bg-background">
+      <nav className="bg-background border-b-2 border-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-white font-mono uppercase tracking-wider">
+              <h1 className="text-2xl font-bold text-foreground font-mono uppercase tracking-wider">
                 Telims
               </h1>
             </div>

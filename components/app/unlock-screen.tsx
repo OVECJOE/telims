@@ -87,10 +87,10 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
 
     if (isCheckingVault) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-black p-4">
+            <div className="min-h-screen flex items-center justify-center bg-background p-4">
                 <Card className="w-full max-w-md">
                     <CardContent className="flex items-center justify-center py-12">
-                        <p className="text-white font-mono">Initializing...</p>
+                        <p className="text-foreground font-mono">Initializing...</p>
                     </CardContent>
                 </Card>
             </div>
@@ -98,12 +98,12 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-black p-4">
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <div className="flex items-center justify-center mb-5">
-                        <div className="p-3 border-2 border-white">
-                            <Lock className="w-8 h-8 text-white" />
+                        <div className="p-3 border-2 border-foreground">
+                            <Lock className="w-8 h-8 text-foreground" />
                         </div>
                     </div>
                     <div className="text-center mb-2">
@@ -134,7 +134,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassphrase(!showPassphrase)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white hover:text-[#a0a0a0]"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground hover:text-muted-foreground"
                                     aria-label={showPassphrase ? "Hide passphrase" : "Show passphrase"}
                                 >
                                     {showPassphrase ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -159,7 +159,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
                                         <button
                                             type="button"
                                             onClick={() => setShowConfirmPassphrase(!showConfirmPassphrase)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white hover:text-[#a0a0a0]"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground hover:text-muted-foreground"
                                             aria-label={showConfirmPassphrase ? "Hide confirmation" : "Show confirmation"}
                                         >
                                             {showConfirmPassphrase ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -170,7 +170,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
                                     )}
                                 </div>
 
-                                <div className="p-3 bg-[#1a1a1a] border-2 border-white space-y-1">
+                                <div className="p-3 bg-muted border-2 border-foreground space-y-1">
                                     <p className="text-xs text-[#a0a0a0] font-mono mb-2">Passphrase Requirements:</p>
                                     {passphraseRequirements.map((req, index) => (
                                         <div key={index} className="flex items-center gap-2 text-xs font-mono">
@@ -209,8 +209,8 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
                         </div>
                     </div>
 
-                    <div className="mt-6 p-4 bg-[#1a1a1a] border-2 border-white">
-                        <p className="text-sm text-white font-mono">
+                    <div className="mt-6 p-4 bg-muted border-2 border-foreground">
+                        <p className="text-sm text-foreground font-mono">
                             <strong>Note:</strong> Your passphrase encrypts all data locally.
                             There is no password recovery. Keep it safe!
                         </p>
