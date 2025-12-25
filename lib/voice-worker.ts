@@ -10,7 +10,7 @@ self.addEventListener("message", async (event) => {
         try {
             self.postMessage({ type: "status", status: "loading" });
             // Use a larger, more accurate model for voice sync
-            recognizer = await pipeline("automatic-speech-recognition", "Xenova/whisper-medium.en", {
+            recognizer = await pipeline("automatic-speech-recognition", "google/medasr", {
                 progress_callback: (progress: unknown) => {
                     self.postMessage({ type: "progress", progress });
                 },
