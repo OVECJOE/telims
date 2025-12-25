@@ -148,7 +148,7 @@ export function TeleprompterDisplay({ script: initialScript, onClose }: Teleprom
     <div className="fixed inset-0 z-50 bg-black">
       {/* Control Bar */}
       <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent z-10 p-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row items-start md:items-center md:justify-between gap-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={onClose}>
               <ArrowLeft className="w-5 h-5 text-white" />
@@ -156,7 +156,7 @@ export function TeleprompterDisplay({ script: initialScript, onClose }: Teleprom
             <h3 className="text-white font-bold font-mono uppercase tracking-wider">{script.title}</h3>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-between">
             <Button
               variant="ghost"
               size="icon"
