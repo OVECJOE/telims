@@ -195,31 +195,33 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
       <div className="min-h-screen bg-background">
         <nav className="bg-background border-b-2 border-foreground sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
+            <div className="flex flex-row justify-between items-center h-16 py-0">
               <div className="flex items-center gap-4">
                 <Link href={`/scripts/${id}`}>
                   <Button variant="ghost" size="icon">
                     <ArrowLeft className="w-5 h-5" />
                   </Button>
                 </Link>
-                <h1 className="text-xl font-bold text-foreground font-mono uppercase tracking-wider">
+                <h1 className="text-lg sm:text-xl font-bold text-foreground font-mono uppercase tracking-wider truncate max-w-[60vw] sm:max-w-xs">
                   Edit Script
                 </h1>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-row gap-2 items-center">
                 <Button
                   variant="outline"
                   onClick={() => setIsDeleteOpen(true)}
                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  size="sm"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                  <span className="hidden sm:inline">Delete</span>
                 </Button>
                 <Button
                   variant="outline"
                   onClick={isRecording ? stopRecording : startRecording}
                   disabled={isTranscribing}
                   className={isRecording ? 'bg-destructive text-destructive-foreground' : ''}
+                  size="sm"
                 >
                   {isTranscribing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -228,18 +230,19 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
                   ) : (
                     <Mic className="w-4 h-4 mr-2" />
                   )}
-                  {isTranscribing ? 'Transcribing...' : isRecording ? 'Stop' : 'Voice'}
+                  <span className="hidden sm:inline">{isTranscribing ? 'Transcribing...' : isRecording ? 'Stop' : 'Voice'}</span>
                 </Button>
                 <Button
                   onClick={handleSave}
                   disabled={isSaving || !title.trim() || !content.trim()}
+                  size="sm"
                 >
                   {isSaving ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <Save className="w-4 h-4 mr-2" />
                   )}
-                  {isSaving ? 'Saving...' : 'Save'}
+                  <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save'}</span>
                 </Button>
               </div>
             </div>
