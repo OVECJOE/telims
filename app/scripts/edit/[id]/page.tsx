@@ -123,9 +123,10 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
 
     try {
       const { pipeline } = await import('@huggingface/transformers');
+      // Use a larger, more accurate model
       const transcriber = await pipeline(
         'automatic-speech-recognition',
-        'Xenova/whisper-tiny.en',
+        'Xenova/whisper-medium.en',
         { dtype: 'fp32' }
       );
 
@@ -270,6 +271,7 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
             <div className="space-y-2">
               <Label>Script Content</Label>
               <RichTextEditor
+                key={content.length + ':' + content.slice(0, 16)}
                 content={content}
                 onChange={(newContent) => {
                   setContent(newContent);

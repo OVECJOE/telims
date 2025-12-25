@@ -99,9 +99,10 @@ export default function NewScriptPage() {
 
     try {
       const { pipeline } = await import('@huggingface/transformers');
+      // Use a larger, more accurate model
       const transcriber = await pipeline(
         'automatic-speech-recognition',
-        'Xenova/whisper-tiny.en',
+        'Xenova/whisper-medium.en',
         { dtype: 'fp32' }
       );
 
@@ -120,7 +121,6 @@ export default function NewScriptPage() {
         toast.error('No speech detected');
       }
     } catch (error) {
-      console.error('Transcription failed:', error);
       toast.error('Failed to transcribe audio');
     } finally {
       setIsTranscribing(false);
@@ -227,6 +227,7 @@ export default function NewScriptPage() {
             </div>
             <div className="w-full">
               <RichTextEditor
+                key={content.length + ':' + content.slice(0, 16)}
                 content={content}
                 onChange={(newContent) => {
                   setContent(newContent);

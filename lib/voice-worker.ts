@@ -9,7 +9,8 @@ self.addEventListener("message", async (event) => {
     if (type === "load") {
         try {
             self.postMessage({ type: "status", status: "loading" });
-            recognizer = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny.en", {
+            // Use a larger, more accurate model for voice sync
+            recognizer = await pipeline("automatic-speech-recognition", "Xenova/whisper-medium.en", {
                 progress_callback: (progress: unknown) => {
                     self.postMessage({ type: "progress", progress });
                 },
