@@ -102,8 +102,8 @@ export default function NewScriptPage() {
       // Use a larger, more accurate model
       const transcriber = await pipeline(
         'automatic-speech-recognition',
-        'Xenova/whisper-medium.en',
-        { dtype: 'fp32' }
+        "google/medasr",
+        { dtype: 'auto' }
       );
 
       const arrayBuffer = await audioBlob.arrayBuffer();
