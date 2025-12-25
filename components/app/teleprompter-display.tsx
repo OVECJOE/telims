@@ -14,6 +14,7 @@ import { Script } from '@/lib/db';
 import { useStorage } from '@/lib/storage-context';
 import { voiceService, VoiceRecognitionResult } from '@/lib/voice';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
 
 interface TeleprompterDisplayProps {
   script: Script;
@@ -248,7 +249,7 @@ export function TeleprompterDisplay({ script: initialScript, onClose }: Teleprom
       >
         <div
           ref={contentRef}
-          className="max-w-4xl mx-auto px-8 py-12"
+          className="max-w-4xl mx-auto px-8 py-12 prose prose-invert font-mono text-sm"
           style={{
             fontSize: `${script.fontSize}px`,
             color: script.textColor,
@@ -256,11 +257,7 @@ export function TeleprompterDisplay({ script: initialScript, onClose }: Teleprom
             fontFamily: "'Courier New', monospace",
           }}
         >
-          {script.content.split('\n').map((line, index) => (
-            <p key={index} className="mb-4">
-              {line || '\u00A0'}
-            </p>
-          ))}
+          <ReactMarkdown>{script.content}</ReactMarkdown>
         </div>
       </div>
 

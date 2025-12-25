@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStorage } from '@/lib/storage-context';
 import { Script } from '@/lib/db';
 import { getPlainTextFromMarkdown } from '@/components/ui/rich-text-editor';
+import ReactMarkdown from 'react-markdown';
 
 export default function ScriptPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -63,34 +64,7 @@ export default function ScriptPage({ params }: { params: Promise<{ id: string }>
                 className="prose prose-invert max-w-none font-mono text-sm whitespace-pre-wrap"
                 style={{ lineHeight: 1.8 }}
               >
-                {script.content.split('\n').map((line, index) => {
-                  if (line.startsWith('# ')) {
-                    return <h1 key={index} className="text-2xl font-bold mt-6 mb-4">{line.slice(2)}</h1>;
-                  }
-                  if (line.startsWith('## ')) {
-                    return <h2 key={index} className="text-xl font-bold mt-5 mb-3">{line.slice(3)}</h2>;
-                  }
-                  if (line.startsWith('### ')) {
-                    return <h3 key={index} className="text-lg font-bold mt-4 mb-2">{line.slice(4)}</h3>;
-                  }
-                  if (line.startsWith('> ')) {
-                    return (
-                      <blockquote key={index} className="border-l-4 border-foreground/30 pl-4 italic text-muted-foreground">
-                        {line.slice(2)}
-                      </blockquote>
-                    );
-                  }
-                  if (line.startsWith('- ')) {
-                    return <li key={index} className="ml-4">{line.slice(2)}</li>;
-                  }
-                  if (line === '---') {
-                    return <hr key={index} className="border-foreground/20 my-4" />;
-                  }
-                  if (!line.trim()) {
-                    return <br key={index} />;
-                  }
-                  return <p key={index} className="mb-2">{line}</p>;
-                })}
+                <ReactMarkdown>{script.content}</ReactMarkdown>
               </div>
             </CardContent>
           </Card>
