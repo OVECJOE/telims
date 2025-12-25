@@ -41,7 +41,7 @@ export default function ScriptLayout({
               </div>
             </div>
             <div className="flex flex-row gap-2 mt-2 sm:mt-0 sm:self-center self-end">
-              <Link href={`/scripts/${id}/edit`}>
+              <Link href={`/scripts/edit/${id}`}>
                 <Button variant="outline" size="sm">
                   <Edit2 className="w-4 h-4 mr-2" />
                   Edit
