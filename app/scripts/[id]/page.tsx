@@ -26,7 +26,7 @@ export default function ScriptPage({ params }: { params: Promise<{ id: string }>
 
   if (!script) {
     return (
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-center py-12">
           <p className="text-muted-foreground font-mono">Loading script...</p>
         </div>
@@ -49,7 +49,7 @@ export default function ScriptPage({ params }: { params: Promise<{ id: string }>
   };
 
   return (
-    <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2 space-y-6">
           <Card>

@@ -181,7 +181,7 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
 
   if (!script) {
     return (
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-center py-12">
           <p className="text-muted-foreground font-mono">Loading script...</p>
         </div>
@@ -193,7 +193,7 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
     <>
       <div className="min-h-screen bg-background">
         <nav className="bg-background border-b-2 border-foreground sticky top-0 z-10">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center gap-4">
                 <Link href={`/scripts/${id}`}>
@@ -245,7 +245,7 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
           </div>
         </nav>
 
-        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="script-title">Title</Label>

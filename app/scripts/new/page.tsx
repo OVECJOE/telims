@@ -138,7 +138,7 @@ export default function NewScriptPage() {
   return (
     <div className="min-h-screen bg-background">
       <nav className="bg-background border-b-2 border-foreground sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-row justify-between items-center h-16 py-0">
             <div className="flex items-center gap-4">
               <Link href="/">
@@ -184,7 +184,7 @@ export default function NewScriptPage() {
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="script-title">Title</Label>
