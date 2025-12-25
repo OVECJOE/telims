@@ -11,6 +11,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Telims - Voice Teleprompter",
   description: "Enterprise-grade offline-first teleprompter with voice control",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
