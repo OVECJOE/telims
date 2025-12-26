@@ -19,7 +19,7 @@ self.addEventListener("message", async (event) => {
                         self.postMessage({ type: "progress", progress });
                     },
                 }
-            );
+            ) as AutomaticSpeechRecognitionPipeline;
             
             self.postMessage({ type: "status", status: "ready" });
         } catch (error) {
