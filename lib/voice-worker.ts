@@ -1,4 +1,7 @@
-import { pipeline, AutomaticSpeechRecognitionPipeline } from "@huggingface/transformers";
+import { 
+  pipeline, 
+  AutomaticSpeechRecognitionPipeline,
+} from "@huggingface/transformers";
 
 let recognizer: AutomaticSpeechRecognitionPipeline | null = null;
 
@@ -10,7 +13,7 @@ self.addEventListener("message", async (event) => {
             self.postMessage({ type: "status", status: "loading" });
             
             // Use Whisper Tiny English model - optimized for browser use
-            recognizer = await pipeline(
+            const model = await pipeline(
                 "automatic-speech-recognition",
                 "Xenova/whisper-tiny.en",
                 {
@@ -19,7 +22,9 @@ self.addEventListener("message", async (event) => {
                         self.postMessage({ type: "progress", progress });
                     },
                 }
-            ) as AutomaticSpeechRecognitionPipeline;
+            );
+            
+            recognizer = model as AutomaticSpeechRecognitionPipeline;
             
             self.postMessage({ type: "status", status: "ready" });
         } catch (error) {
