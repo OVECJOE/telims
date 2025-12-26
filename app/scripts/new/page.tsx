@@ -30,7 +30,7 @@ export default function NewScriptPage() {
   // Initialize worker
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const worker = new Worker(new URL('./speech-recognition.worker.ts', import.meta.url));
+      const worker = new Worker(new URL('../../../lib/voice-worker.ts', import.meta.url));
       workerRef.current = worker;
 
       worker.onmessage = (event) => {
