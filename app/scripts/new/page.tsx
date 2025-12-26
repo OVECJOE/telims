@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Mic, MicOff, Loader2, Wand2 } from 'lucide-react';
@@ -21,14 +21,60 @@ export default function NewScriptPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [workerReady, setWorkerReady] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ title?: string; content?: string }>({});
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const workerRef = useRef<Worker | null>(null);
+
+  // Initialize worker
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const worker = new Worker(new URL('./speech-recognition.worker.ts', import.meta.url));
+      workerRef.current = worker;
+
+      worker.onmessage = (event) => {
+        const { type, status, result, error, progress } = event.data;
+
+        if (type === 'status') {
+          if (status === 'loading') {
+            toast.info('Loading speech recognition model...');
+          } else if (status === 'ready') {
+            setWorkerReady(true);
+            toast.success('Speech recognition ready');
+          }
+        } else if (type === 'progress') {
+          // Optional: handle progress updates
+          console.log('Loading progress:', progress);
+        } else if (type === 'result') {
+          const transcribedText = result?.text || '';
+          if (transcribedText) {
+            setContent(prev => prev ? `${prev}\n\n${transcribedText}` : transcribedText);
+            toast.success('Transcription complete');
+          } else {
+            toast.error('No speech detected');
+          }
+          setIsTranscribing(false);
+        } else if (type === 'error') {
+          console.error('Worker error:', error);
+          toast.error('Transcription failed');
+          setIsTranscribing(false);
+        }
+      };
+
+      // Load the model
+      worker.postMessage({ type: 'load' });
+
+      return () => {
+        worker.terminate();
+      };
+    }
+  }, []);
 
   const handleSave = async () => {
     const plainText = getPlainTextFromMarkdown(content);
     const validation = validateScript(title, plainText);
-    
+
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
       return;
@@ -36,7 +82,7 @@ export default function NewScriptPage() {
 
     setValidationErrors({});
     setIsSaving(true);
-    
+
     try {
       const script = await saveScript({
         title: title.trim(),
@@ -59,6 +105,11 @@ export default function NewScriptPage() {
   };
 
   const startRecording = async () => {
+    if (!workerReady) {
+      toast.error('Speech recognition is still loading. Please wait...');
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
@@ -98,31 +149,26 @@ export default function NewScriptPage() {
     toast.info('Transcribing audio...');
 
     try {
-      const { pipeline } = await import('@huggingface/transformers');
-      // Use a larger, more accurate model
-      const transcriber = await pipeline(
-        'automatic-speech-recognition',
-        "google/medasr",
-        { dtype: 'auto' }
-      );
-
+      // Convert blob to array buffer
       const arrayBuffer = await audioBlob.arrayBuffer();
+      
+      // Decode audio data
       const audioContext = new AudioContext({ sampleRate: 16000 });
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Get audio data as Float32Array
       const audioData = audioBuffer.getChannelData(0);
 
-      const result = await transcriber(audioData);
-      const transcribedText = Array.isArray(result) ? result[0]?.text : result.text;
-
-      if (transcribedText) {
-        setContent(prev => prev ? `${prev}\n\n${transcribedText}` : transcribedText);
-        toast.success('Transcription complete');
-      } else {
-        toast.error('No speech detected');
+      // Send to worker for transcription
+      if (workerRef.current) {
+        workerRef.current.postMessage({
+          type: 'transcribe',
+          audio: audioData,
+        });
       }
     } catch (error) {
-      toast.error('Failed to transcribe audio');
-    } finally {
+      console.error('Audio processing error:', error);
+      toast.error('Failed to process audio');
       setIsTranscribing(false);
     }
   };
@@ -154,7 +200,7 @@ export default function NewScriptPage() {
               <Button
                 variant="outline"
                 onClick={handleVoiceInput}
-                disabled={isTranscribing}
+                disabled={isTranscribing || !workerReady}
                 className={isRecording ? 'bg-destructive text-destructive-foreground' : ''}
                 size="sm"
               >
@@ -165,7 +211,9 @@ export default function NewScriptPage() {
                 ) : (
                   <Mic className="w-4 h-4" />
                 )}
-                <span className="hidden sm:inline ml-2">{isTranscribing ? 'Transcribing...' : isRecording ? 'Stop' : 'Voice Input'}</span>
+                <span className="hidden sm:inline ml-2">
+                  {!workerReady ? 'Loading...' : isTranscribing ? 'Transcribing...' : isRecording ? 'Stop' : 'Voice Input'}
+                </span>
               </Button>
               <Button
                 onClick={handleSave}
