@@ -12,6 +12,7 @@ import { useStorage } from '@/lib/storage-context';
 import { validateScript } from '@/lib/db';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 export default function NewScriptPage() {
   const router = useRouter();
@@ -22,10 +23,12 @@ export default function NewScriptPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [workerReady, setWorkerReady] = useState(false);
+  const [progress, setProgress] = useState(0); // 0-100
   const [validationErrors, setValidationErrors] = useState<{ title?: string; content?: string }>({});
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const workerRef = useRef<Worker | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // Initialize worker
   useEffect(() => {
@@ -34,18 +37,19 @@ export default function NewScriptPage() {
       workerRef.current = worker;
 
       worker.onmessage = (event) => {
-        const { type, status, result, error, progress } = event.data;
+        const { type, status, result, error, progress: progressObj } = event.data;
 
         if (type === 'status') {
           if (status === 'loading') {
-            toast.info('Loading speech recognition model...');
+            setProgress(0);
           } else if (status === 'ready') {
             setWorkerReady(true);
-            toast.success('Speech recognition ready');
+            setProgress(100);
           }
         } else if (type === 'progress') {
-          // Optional: handle progress updates
-          console.log('Loading progress:', progress);
+          if (typeof progressObj?.progress === 'number') {
+            setProgress(Math.max(0, Math.min(100, progressObj.progress)));
+          }
         } else if (type === 'result') {
           const transcribedText = result?.text || '';
           if (transcribedText) {
@@ -66,7 +70,17 @@ export default function NewScriptPage() {
       worker.postMessage({ type: 'load' });
 
       return () => {
-        worker.terminate();
+        if (workerRef.current) {
+          workerRef.current.terminate();
+          workerRef.current = null;
+        }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
       };
     }
   }, []);
@@ -142,6 +156,10 @@ export default function NewScriptPage() {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
   };
 
   const transcribeAudio = async (audioBlob: Blob) => {
@@ -196,25 +214,42 @@ export default function NewScriptPage() {
                 New Script
               </h1>
             </div>
-            <div className="flex flex-row gap-2 items-center">
-              <Button
-                variant="outline"
-                onClick={handleVoiceInput}
-                disabled={isTranscribing || !workerReady}
-                className={isRecording ? 'bg-destructive text-destructive-foreground' : ''}
-                size="sm"
-              >
-                {isTranscribing ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : isRecording ? (
-                  <MicOff className="w-4 h-4" />
-                ) : (
-                  <Mic className="w-4 h-4" />
+            <div className="flex flex-row gap-2 items-center relative">
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  onClick={handleVoiceInput}
+                  disabled={isTranscribing || !workerReady}
+                  className={isRecording ? 'bg-destructive text-destructive-foreground' : ''}
+                  size="sm"
+                  style={{ position: 'relative', zIndex: 1 }}
+                >
+                  {isTranscribing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : isRecording ? (
+                    <MicOff className="w-4 h-4" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline ml-2">
+                    {!workerReady ? 'Loading...' : isTranscribing ? 'Transcribing...' : isRecording ? 'Stop' : 'Voice Input'}
+                  </span>
+                </Button>
+                {/* Progress bar overlays the button, animates left to right */}
+                {!workerReady && (
+                  <div
+                    aria-label="Model loading progress"
+                    className={cn([
+                      'absolute left-0 top-0 h-full',
+                      'transition-all duration-200',
+                      'opacity-50 z-20 pointer-events-none',
+                      isRecording ? 'bg-destructive' : 'bg-primary',
+                      'border-r-4 border-white', // thick white right border
+                    ])}
+                    style={{ width: `${progress}%` }}
+                  />
                 )}
-                <span className="hidden sm:inline ml-2">
-                  {!workerReady ? 'Loading...' : isTranscribing ? 'Transcribing...' : isRecording ? 'Stop' : 'Voice Input'}
-                </span>
-              </Button>
+              </div>
               <Button
                 onClick={handleSave}
                 disabled={isSaving || !title.trim() || !content.trim()}

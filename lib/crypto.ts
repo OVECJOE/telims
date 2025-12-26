@@ -104,9 +104,4 @@ export class CryptoService {
             throw new Error('Invalid passphrase or corrupted data');
         }
     }
-
-    static generateSalt(): string {
-        const salt = crypto.getRandomValues(new Uint8Array(this.SALT_LENGTH));
-        return btoa(String.fromCharCode(...salt));
-    }
 }

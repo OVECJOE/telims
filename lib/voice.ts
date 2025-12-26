@@ -37,11 +37,10 @@ export class VoiceService {
         return VoiceService.instance;
     }
 
-    async initialize(): Promise<void> {
+    async initialize(model: 'tiny' | 'small' | 'medium' | 'large' = 'tiny'): Promise<void> {
         if (this.isReady || this.isInitializing) return;
 
         this.isInitializing = true;
-        
         return new Promise((resolve, reject) => {
             try {
                 this.worker = new Worker(
@@ -76,7 +75,7 @@ export class VoiceService {
                     }
                 };
 
-                this.worker.postMessage({ type: 'load' });
+                this.worker.postMessage({ type: 'load', model });
             } catch (error) {
                 this.isInitializing = false;
                 reject(error);
@@ -84,11 +83,11 @@ export class VoiceService {
         });
     }
 
-    async startListening(onCommand: (result: VoiceRecognitionResult) => void) {
+    async startListening(onCommand: (result: VoiceRecognitionResult) => void, model: 'tiny' | 'small' | 'medium' | 'large' = 'tiny') {
         if (this.isListening) return;
 
         if (!this.isReady) {
-            await this.initialize();
+            await this.initialize(model);
         }
 
         this.onCommandCallback = onCommand;
@@ -173,20 +172,6 @@ export class VoiceService {
             }
         }
         return null;
-    }
-
-    isActive(): boolean {
-        return this.isListening;
-    }
-
-    async testMicrophone(): Promise<boolean> {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(track => track.stop());
-            return true;
-        } catch {
-            return false;
-        }
     }
 }
 

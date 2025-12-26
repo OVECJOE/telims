@@ -59,57 +59,6 @@ export function validateScript(title: string, content: string): ScriptValidation
     };
 }
 
-export interface SettingsValidation {
-    isValid: boolean;
-    errors: Record<string, string>;
-}
-
-export function validateSettings(settings: Partial<Settings>): SettingsValidation {
-    const errors: Record<string, string> = {};
-    
-    if (settings.defaultFontSize !== undefined) {
-        if (settings.defaultFontSize < 24 || settings.defaultFontSize > 120) {
-            errors.defaultFontSize = 'Font size must be between 24 and 120';
-        }
-    }
-    
-    if (settings.defaultScrollSpeed !== undefined) {
-        if (settings.defaultScrollSpeed < 1 || settings.defaultScrollSpeed > 10) {
-            errors.defaultScrollSpeed = 'Scroll speed must be between 1 and 10';
-        }
-    }
-    
-    if (settings.sessionTimeout !== undefined) {
-        if (settings.sessionTimeout < 300000 || settings.sessionTimeout > 28800000) {
-            errors.sessionTimeout = 'Session timeout must be between 5 minutes and 8 hours';
-        }
-    }
-    
-    if (settings.inactivityTimeout !== undefined) {
-        if (settings.inactivityTimeout < 300000 || settings.inactivityTimeout > 7200000) {
-            errors.inactivityTimeout = 'Inactivity timeout must be between 5 minutes and 2 hours';
-        }
-    }
-    
-    const colorRegex = /^#[0-9A-Fa-f]{6}$/;
-    if (settings.defaultBackgroundColor !== undefined) {
-        if (!colorRegex.test(settings.defaultBackgroundColor)) {
-            errors.defaultBackgroundColor = 'Invalid color format';
-        }
-    }
-    
-    if (settings.defaultTextColor !== undefined) {
-        if (!colorRegex.test(settings.defaultTextColor)) {
-            errors.defaultTextColor = 'Invalid color format';
-        }
-    }
-    
-    return {
-        isValid: Object.keys(errors).length === 0,
-        errors,
-    };
-}
-
 export interface Script {
     id: string;
     title: string;
@@ -122,6 +71,7 @@ export interface Script {
     textColor: string;
     mirrorMode: boolean;
     voiceControlEnabled: boolean;
+    isFullscreen?: boolean;
 }
 
 export interface Settings {
@@ -131,6 +81,7 @@ export interface Settings {
     defaultTextColor: string;
     sessionTimeout: number;
     inactivityTimeout: number;
+    defaultSpeechModel?: string; // e.g. 'tiny', 'base', 'medium'
 }
 
 const DB_NAME = 'TelimsDB';
@@ -216,8 +167,8 @@ export class DatabaseService {
                 }
             }
 
-            this.startSessionTimer();
-            this.updateSessionExpiry();
+            await this.startSessionTimer();
+            await this.updateSessionExpiry();
 
             return true;
         } catch {
@@ -464,23 +415,24 @@ export class DatabaseService {
         if (!this.db) throw new Error('Database not unlocked');
 
         return new Promise((resolve, reject) => {
-        const transaction = this.db!.transaction([SETTINGS_STORE], 'readonly');
-        const store = transaction.objectStore(SETTINGS_STORE);
-        const request = store.get('settings');
+            const transaction = this.db!.transaction([SETTINGS_STORE], 'readonly');
+            const store = transaction.objectStore(SETTINGS_STORE);
+            const request = store.get('settings');
 
-        request.onsuccess = () => {
-            const settings = request.result || {
-            id: 'settings',
-            defaultFontSize: 48,
-            defaultScrollSpeed: 2,
-            defaultBackgroundColor: '#000000',
-            defaultTextColor: '#ffffff',
-            sessionTimeout: 7200000,
-            inactivityTimeout: 1800000,
+            request.onsuccess = () => {
+                const settings = request.result || {
+                    id: 'settings',
+                    defaultFontSize: 48,
+                    defaultScrollSpeed: 2,
+                    defaultBackgroundColor: '#000000',
+                    defaultTextColor: '#ffffff',
+                    sessionTimeout: 7200000,
+                    inactivityTimeout: 1800000,
+                    defaultSpeechModel: 'tiny',
+                };
+                resolve(settings);
             };
-            resolve(settings);
-        };
-        request.onerror = () => reject(request.error);
+            request.onerror = () => reject(request.error);
         });
     }
 
@@ -489,39 +441,43 @@ export class DatabaseService {
 
         const currentSettings = await this.getSettings();
         const updatedSettings = { ...currentSettings, ...settings, id: 'settings' };
-
         return new Promise((resolve, reject) => {
-        const transaction = this.db!.transaction([SETTINGS_STORE], 'readwrite');
-        const store = transaction.objectStore(SETTINGS_STORE);
-        const request = store.put(updatedSettings);
+            const transaction = this.db!.transaction([SETTINGS_STORE], 'readwrite');
+            const store = transaction.objectStore(SETTINGS_STORE);
+            const request = store.put(updatedSettings);
 
-        request.onsuccess = () => resolve(updatedSettings);
-        request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(updatedSettings);
+            request.onerror = () => reject(request.error);
         });
     }
 
-    private startSessionTimer() {
-        this.sessionCheckInterval = setInterval(() => {
+    private async startSessionTimer() {
+        const settings = await this.getSettings();
+        this.sessionCheckInterval = setInterval(async () => {
             const expiry = localStorage.getItem(SESSION_EXPIRY);
             if (expiry && Date.now() > parseInt(expiry, 10)) {
                 this.lock();
             }
-        }, 60000); // Check every minute
+        }, 60000);
 
         if (typeof window !== 'undefined') {
-            this.boundFocusHandler = () => this.updateSessionExpiry();
-            this.boundBlurHandler = () => this.handleInactivity();
+            this.boundFocusHandler = () => {
+                this.updateSessionExpiry().catch(console.error);
+            };
+            this.boundBlurHandler = () => {
+                this.handleInactivity().catch(console.error);
+            };
             window.addEventListener('focus', this.boundFocusHandler);
             window.addEventListener('blur', this.boundBlurHandler);
         }
     }
 
-    private handleInactivity() {
-        // Clear any existing inactivity timeout
+    private async handleInactivity() {
         if (this.inactivityTimeoutId) {
             clearTimeout(this.inactivityTimeoutId);
         }
-        const inactivityTimeout = 30 * 60 * 1000; // 30 minutes
+        const settings = await this.getSettings();
+        const inactivityTimeout = settings.inactivityTimeout;
         this.inactivityTimeoutId = setTimeout(() => {
             if (!document.hasFocus()) {
                 this.lock();
@@ -530,8 +486,9 @@ export class DatabaseService {
         }, inactivityTimeout);
     }
 
-    private updateSessionExpiry() {
-        const sessionTimeout = 2 * 60 * 60 * 1000; // 2 hours
+    private async updateSessionExpiry() {
+        const settings = await this.getSettings();
+        const sessionTimeout = settings.sessionTimeout;
         const expiry = Date.now() + sessionTimeout;
         localStorage.setItem(SESSION_EXPIRY, expiry.toString());
     }

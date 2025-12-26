@@ -36,11 +36,15 @@ export function ScriptList({ onSelectScript }: ScriptListProps) {
     setDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (pendingDeleteId) {
-      deleteScript(pendingDeleteId);
-      setPendingDeleteId(null);
-      setDialogOpen(false);
+      try {
+        await deleteScript(pendingDeleteId);
+        setPendingDeleteId(null);
+        setDialogOpen(false);
+      } catch (error) {
+        console.error('Failed to delete script:', error);
+      }
     }
   };
 

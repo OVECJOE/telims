@@ -23,6 +23,13 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { useStorage } from '@/lib/storage-context';
 import { Settings } from '@/lib/db';
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem
+} from '@/components/ui/select';
 
 type SettingsFormValues = {
     defaultFontSize: number;
@@ -31,6 +38,7 @@ type SettingsFormValues = {
     defaultTextColor: string;
     sessionTimeout: number;
     inactivityTimeout: number;
+    defaultSpeechModel: string;
 };
 
 export function SettingsDialog() {
@@ -47,6 +55,7 @@ export function SettingsDialog() {
             defaultTextColor: '#ffffff',
             sessionTimeout: 120,
             inactivityTimeout: 30,
+            defaultSpeechModel: 'tiny',
         },
     });
 
@@ -59,6 +68,7 @@ export function SettingsDialog() {
                 defaultTextColor: settings.defaultTextColor,
                 sessionTimeout: Math.round(settings.sessionTimeout / 60000),
                 inactivityTimeout: Math.round(settings.inactivityTimeout / 60000),
+                defaultSpeechModel: settings.defaultSpeechModel || 'tiny',
             });
         }
     }, [settings, form]);
@@ -79,6 +89,7 @@ export function SettingsDialog() {
             defaultTextColor: values.defaultTextColor,
             sessionTimeout: values.sessionTimeout * 60000,
             inactivityTimeout: values.inactivityTimeout * 60000,
+            defaultSpeechModel: values.defaultSpeechModel,
         };
         await updateSettings(settingsToSave);
         handleOpenChange(false);
@@ -86,7 +97,7 @@ export function SettingsDialog() {
 
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md overflow-y-auto max-h-[90vh] scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <DialogHeader>
                     <DialogTitle>Settings</DialogTitle>
                     <DialogDescription>
@@ -215,7 +226,36 @@ export function SettingsDialog() {
                             )}
                         />
 
-                        <div className="flex gap-2">
+                        <FormField
+                            control={form.control}
+                            name="defaultSpeechModel"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Default Speech Model</FormLabel>
+                                    <FormControl>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                        >
+                                            <SelectTrigger className="w-full h-10 font-mono">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="tiny">Whisper Tiny (fastest, least accurate)</SelectItem>
+                                                <SelectItem value="small">Whisper Small (faster, less accurate)</SelectItem>
+                                                <SelectItem value="medium">Whisper Medium (slower, more accurate)</SelectItem>
+                                                <SelectItem value="large">Whisper Large (slowest, most accurate)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
+                                    <FormDescription>
+                                        Choose the default speech recognition model for transcription. Reload required for changes to take effect.
+                                    </FormDescription>
+                                </FormItem>
+                            )}
+                        />
+                        <div className="flex gap-2 mt-4">
                             <Button
                                 type="button"
                                 variant="outline"

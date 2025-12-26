@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Play, Edit2, Settings } from 'lucide-react';
+import { ArrowLeft, Play, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useStorage } from '@/lib/storage-context';
 import { Script } from '@/lib/db';

@@ -26,6 +26,8 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{ title?: string; content?: string }>({});
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     const found = scripts.find(s => s.id === id);
@@ -85,19 +87,23 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
-      const audioChunks: Blob[] = [];
+      audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          audioChunks.push(event.data);
+          audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop());
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         await transcribeAudio(audioBlob);
       };
 
@@ -107,6 +113,10 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
     } catch (error) {
       console.error('Failed to start recording:', error);
       toast.error('Failed to access microphone');
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
     }
   };
 
@@ -115,67 +125,94 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
   };
 
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
+
+  const workerRef = useRef<Worker | null>(null);
+  const [workerReady, setWorkerReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const worker = new Worker(new URL('../../../../lib/voice-worker.ts', import.meta.url));
+      workerRef.current = worker;
+
+      worker.onmessage = (event) => {
+        const { type, status, result, error } = event.data;
+
+        if (type === 'status') {
+          if (status === 'ready') {
+            setWorkerReady(true);
+          }
+        } else if (type === 'result') {
+          const transcribedText = result?.text || '';
+          if (transcribedText) {
+            setContent(prev => {
+              if (!prev) return transcribedText;
+              if (/\n\s*$/.test(prev)) return prev + transcribedText;
+              return prev + '\n\n' + transcribedText;
+            });
+            toast.success('Transcription complete');
+          } else {
+            toast.error('No speech detected');
+          }
+          setIsTranscribing(false);
+        } else if (type === 'error') {
+          console.error('Worker error:', error);
+          toast.error('Transcription failed');
+          setIsTranscribing(false);
+        }
+      };
+
+      worker.postMessage({ type: 'load', model: 'tiny' });
+
+      return () => {
+        if (workerRef.current) {
+          workerRef.current.terminate();
+          workerRef.current = null;
+        }
+      };
+    }
+  }, []);
+
   const transcribeAudio = async (audioBlob: Blob) => {
+    if (!workerReady) {
+      toast.error('Speech recognition is still loading. Please wait...');
+      return;
+    }
+
     setIsTranscribing(true);
     toast.info('Transcribing audio...');
 
     try {
-      const { pipeline } = await import('@huggingface/transformers');
-      // Use a larger, more accurate model
-      const transcriber = await pipeline(
-        'automatic-speech-recognition',
-        'Xenova/whisper-medium.en',
-        { dtype: 'fp32' }
-      );
-
       const arrayBuffer = await audioBlob.arrayBuffer();
-      let audioBuffer;
-      try {
-        const audioContext = new AudioContext();
-        audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        // Resample if needed
-        let audioData = audioBuffer.getChannelData(0);
-        if (audioBuffer.sampleRate !== 16000) {
-          // Simple resample to 16kHz (linear interpolation)
-          const ratio = 16000 / audioBuffer.sampleRate;
-          const newLength = Math.round(audioData.length * ratio);
-          const resampled = new Float32Array(newLength);
-          for (let i = 0; i < newLength; i++) {
-            const origIdx = i / ratio;
-            const left = Math.floor(origIdx);
-            const right = Math.min(left + 1, audioData.length - 1);
-            const frac = origIdx - left;
-            resampled[i] = audioData[left] * (1 - frac) + audioData[right] * frac;
-          }
-          audioData = resampled;
-        }
-        if (!audioData || audioData.length === 0) {
-          toast.error('No audio data found');
-          setIsTranscribing(false);
-          return;
-        }
-        const result = await transcriber(audioData);
-        const transcribedText = Array.isArray(result) ? result[0]?.text : result.text;
-        if (transcribedText && transcribedText.trim()) {
-          setContent(prev => {
-            if (!prev) return transcribedText;
-            if (/\n\s*$/.test(prev)) return prev + transcribedText;
-            return prev + '\n\n' + transcribedText;
-          });
-          toast.success('Transcription complete');
-        } else {
-          toast.error('No speech detected');
-        }
-      } catch (decodeError) {
-        console.error('Audio decode failed:', decodeError);
-        toast.error('Failed to decode audio');
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      const audioData = audioBuffer.getChannelData(0);
+      await audioContext.close();
+
+      if (workerRef.current) {
+        workerRef.current.postMessage({
+          type: 'transcribe',
+          audio: audioData,
+        });
       }
     } catch (error) {
-      console.error('Transcription failed:', error);
-      toast.error('Failed to transcribe audio');
-    } finally {
+      console.error('Audio processing error:', error);
+      toast.error('Failed to process audio');
       setIsTranscribing(false);
     }
   };
@@ -219,7 +256,7 @@ export default function EditScriptPage({ params }: { params: Promise<{ id: strin
                 <Button
                   variant="outline"
                   onClick={isRecording ? stopRecording : startRecording}
-                  disabled={isTranscribing}
+                  disabled={isTranscribing || !workerReady}
                   className={isRecording ? 'bg-destructive text-destructive-foreground' : ''}
                   size="sm"
                 >
