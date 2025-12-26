@@ -1,7 +1,6 @@
-import { pipeline } from "@huggingface/transformers";
+import { pipeline, AutomaticSpeechRecognitionPipeline } from "@huggingface/transformers";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let recognizer: any = null;
+let recognizer: AutomaticSpeechRecognitionPipeline | null = null;
 
 self.addEventListener("message", async (event) => {
     const { type, audio } = event.data;
@@ -9,12 +8,19 @@ self.addEventListener("message", async (event) => {
     if (type === "load") {
         try {
             self.postMessage({ type: "status", status: "loading" });
-            // Use a larger, more accurate model for voice sync
-            recognizer = await pipeline("automatic-speech-recognition", "google/medasr", {
-                progress_callback: (progress: unknown) => {
-                    self.postMessage({ type: "progress", progress });
-                },
-            });
+            
+            // Use Whisper Tiny English model - optimized for browser use
+            recognizer = await pipeline(
+                "automatic-speech-recognition",
+                "Xenova/whisper-tiny.en",
+                {
+                    quantized: true,
+                    progress_callback: (progress: unknown) => {
+                        self.postMessage({ type: "progress", progress });
+                    },
+                }
+            );
+            
             self.postMessage({ type: "status", status: "ready" });
         } catch (error) {
             self.postMessage({ type: "error", error: String(error) });
@@ -26,10 +32,15 @@ self.addEventListener("message", async (event) => {
             const result = await recognizer(audio, {
                 chunk_length_s: 30,
                 stride_length_s: 5,
+                language: "english",
+                task: "transcribe",
             });
+            
             self.postMessage({ type: "result", result });
         } catch (error) {
             self.postMessage({ type: "error", error: String(error) });
         }
     }
 });
+
+export {};
